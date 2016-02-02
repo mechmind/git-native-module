@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mechmind/git-go/git"
+	"github.com/mechmind/git-go/history"
 	"github.com/mechmind/git-go/rawgit"
 )
 
@@ -244,15 +245,71 @@ func (repo *Repository) GetCommitByPath(relpath string) (*Commit, error) {
 }
 
 func (repo *Repository) FileCommitsCount(revision, file string) (int64, error) {
-	// FIXME: implement
-	return -1, nil
+	oid, err := rawgit.ResolveName(repo.repo, revision)
+	if err != nil {
+		return 0, err
+	}
+
+	rawCommit, err := repo.repo.OpenCommit(oid)
+	if err != nil {
+		return 0, err
+	}
+
+	commit, err := raw2commit(repo, rawCommit)
+	if err != nil {
+		return 0, err
+	}
+
+	return repo.fileCommitsCount(commit, file)
+}
+
+func (repo *Repository) fileCommitsCount(commit *Commit, file string) (int64, error) {
+	pathCb := history.MakePathChecker(commit.repo.repo, file)
+	cmp := history.MakePathComparator(commit.repo.repo, file)
+	counter, result := history.MakeCounter(pathCb)
+
+	hist := history.New(commit.repo.repo)
+	_, err := hist.WalkFilteredHistory(sha2oidp(commit.ID), counter, cmp)
+	if err != nil {
+		return 0, err
+	}
+
+	return int64(result()), nil
 }
 
 func (repo *Repository) CommitsByFileAndRange(revision, file string, page int) (*list.List, error) {
+	oid, err := rawgit.ResolveName(repo.repo, revision)
+	if err != nil {
+		return nil, err
+	}
 
-	// FIXME: implement
-	return nil, nil
+	rawCommit, err := repo.repo.OpenCommit(oid)
+	if err != nil {
+		return nil, err
+	}
+
+	commit, err := raw2commit(repo, rawCommit)
+	if err != nil {
+		return nil, err
+	}
+
+	return repo.commitsByFileAndRange(commit, file, page)
 }
+
+func (repo *Repository) commitsByFileAndRange(commit *Commit, file string, page int) (*list.List, error) {
+	pathCb := history.MakePathChecker(commit.repo.repo, file)
+	cmp := history.MakePathComparator(commit.repo.repo, file)
+	pager := history.MakePager(commit.repo.repo, pathCb, (page-1)*CommitsRangeSize, CommitsRangeSize)
+
+	hist := history.New(commit.repo.repo)
+	result, err := hist.WalkFilteredHistory(sha2oidp(commit.ID), pager, cmp)
+	if err != nil {
+		return nil, err
+	}
+
+	return repo.raw2commitList(result)
+}
+
 func (repo *Repository) FilesCountBetween(startCommitID, endCommitID string) (int, error) {
 
 	// FIXME: implement
