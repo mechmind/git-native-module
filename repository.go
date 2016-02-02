@@ -29,8 +29,15 @@ func InitRepository(path string, bare bool) error {
 }
 
 func OpenRepository(path string) (*Repository, error) {
-	// FIXME: implement
-	return nil, nil
+	repo, err := git.OpenRepository(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Repository{
+		Path: path,
+		repo: repo,
+	}, nil
 }
 
 type CloneRepoOptions struct {
@@ -170,30 +177,77 @@ func (repo *Repository) getCommit(id sha1) (*Commit, error) {
 }
 
 func (repo *Repository) GetTagCommitID(name string) (string, error) {
-	// FIXME: implement
-	return "", nil
+	oid, err := repo.repo.ResolveRef(name)
+	if err != nil {
+		return "", err
+	}
+
+	return oid.String(), nil
+}
+
+func (repo *Repository) openCommit(oid *rawgit.OID) (*Commit, error) {
+	commit, err := repo.repo.OpenCommit(oid)
+	if err != nil {
+		return nil, err
+	}
+
+	return raw2commit(repo, commit)
 }
 
 func (repo *Repository) GetCommit(commitID string) (*Commit, error) {
-	// FIXME: implement
-	return nil, nil
+	oid, err := rawgit.ParseOID(commitID)
+	if err != nil {
+		return nil, err
+	}
+
+	return repo.openCommit(oid)
 }
+
 func (repo *Repository) GetBranchCommit(name string) (*Commit, error) {
-	// FIXME: implement
-	return nil, nil
+	oid, err := repo.repo.ResolveBranch(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return repo.openCommit(oid)
 }
+
 func (repo *Repository) GetTagCommit(name string) (*Commit, error) {
-	// FIXME: implement
-	return nil, nil
+	oid, otype, err := repo.repo.ResolveTag(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if otype != rawgit.OTypeCommit {
+		return nil, fmt.Errorf("tag '%s' points to object of type %s, not a commit", name, otype.String())
+	}
+
+	return repo.openCommit(oid)
 }
+
+func (repo *Repository) getHEAD() (*Commit, error) {
+	oid, err := repo.repo.ResolveRef("HEAD")
+	if err != nil {
+		return nil, err
+	}
+
+	return repo.openCommit(oid)
+}
+
 func (repo *Repository) GetCommitByPath(relpath string) (*Commit, error) {
-	// FIXME: implement
-	return nil, nil
+	head, err := repo.getHEAD()
+	if err != nil {
+		return nil, err
+	}
+
+	return head.GetCommitByPath(relpath)
 }
+
 func (repo *Repository) FileCommitsCount(revision, file string) (int64, error) {
 	// FIXME: implement
 	return -1, nil
 }
+
 func (repo *Repository) CommitsByFileAndRange(revision, file string, page int) (*list.List, error) {
 
 	// FIXME: implement
@@ -216,42 +270,6 @@ func (repo *Repository) CommitsBetweenIDs(last, before string) (*list.List, erro
 func (repo *Repository) CommitsCountBetween(start, end string) (int64, error) {
 	// FIXME: implement
 	return -1, nil
-}
-
-func (repo *Repository) getRefCommitID(name string) (string, error) {
-	// FIXME: implement
-	return "", nil
-}
-func parseCommitData(data []byte) (*Commit, error) {
-	// FIXME: implement
-	return nil, nil
-}
-
-func (repo *Repository) getCommitByPathWithID(id sha1, relpath string) (*Commit, error) {
-
-	// FIXME: implement
-	return nil, nil
-}
-func (repo *Repository) commitsByRange(id sha1, page int) (*list.List, error) {
-	// FIXME: implement
-	return nil, nil
-}
-func (repo *Repository) searchCommits(id sha1, keyword string) (*list.List, error) {
-	// FIXME: implement
-	return nil, nil
-}
-func (repo *Repository) commitsBefore(l *list.List, parent *list.Element, id sha1, current, limit int) error {
-
-	// FIXME: implement
-	return nil
-}
-func (repo *Repository) getCommitsBefore(id sha1) (*list.List, error) {
-	// FIXME: implement
-	return nil, nil
-}
-func (repo *Repository) getCommitsBeforeLimit(id sha1, num int) (*list.List, error) {
-	// FIXME: implement
-	return nil, nil
 }
 
 // repo_tree.go ports
