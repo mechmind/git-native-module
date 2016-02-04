@@ -315,15 +315,46 @@ func (repo *Repository) FilesCountBetween(startCommitID, endCommitID string) (in
 	// FIXME: implement
 	return -1, nil
 }
-func (repo *Repository) CommitsBetween(last *Commit, before *Commit) (*list.List, error) {
 
-	// FIXME: implement
-	return nil, nil
+// this implementation was borrowed as-is from git-module
+func (repo *Repository) CommitsBetween(last *Commit, before *Commit) (*list.List, error) {
+	l := list.New()
+	if last == nil || last.ParentCount() == 0 {
+		return l, nil
+	}
+
+	var err error
+	cur := last
+	for {
+		if cur.ID.Equal(before.ID) {
+			break
+		}
+		l.PushBack(cur)
+		if cur.ParentCount() == 0 {
+			break
+		}
+		cur, err = cur.Parent(0)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return l, nil
 }
+
 func (repo *Repository) CommitsBetweenIDs(last, before string) (*list.List, error) {
-	// FIXME: implement
-	return nil, nil
+	lastCommit, err := repo.GetCommit(last)
+	if err != nil {
+		return nil, err
+	}
+
+	beforeCommit, err := repo.GetCommit(before)
+	if err != nil {
+		return nil, err
+	}
+
+	return repo.CommitsBetween(lastCommit, beforeCommit)
 }
+
 func (repo *Repository) CommitsCountBetween(start, end string) (int64, error) {
 	// FIXME: implement
 	return -1, nil

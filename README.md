@@ -5,5 +5,5 @@ This is an attempt to make drop-in replacement of git-module for Gogs.
 
 countdown to rough implementation:
 
-FIXMEs left: 18
+FIXMEs left: 16
 panics left: 8
