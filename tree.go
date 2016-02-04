@@ -173,7 +173,6 @@ func (te *TreeEntry) IsDir() bool {
 	return te.mode == ENTRY_MODE_TREE
 }
 
-// FIXME: proper port
 func (te *TreeEntry) Blob() *Blob {
 	return &Blob{
 		repo:      te.ptree.repo,
@@ -213,11 +212,11 @@ func (tes Entries) Sort() {
 
 func (t *Tree) GetTreeEntryByPath(relpath string) (*TreeEntry, error) {
 	if len(relpath) == 0 {
-		// FIXME: I think this is not a correct tree entry. It misses ptree field
 		return &TreeEntry{
-			ID:   t.ID,
-			Type: OBJECT_TREE,
-			mode: ENTRY_MODE_TREE,
+			ID:    t.ID,
+			Type:  OBJECT_TREE,
+			mode:  ENTRY_MODE_TREE,
+			ptree: t.ptree,
 		}, nil
 	}
 

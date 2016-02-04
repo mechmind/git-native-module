@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 )
 
-// FIXME: investigate later
 type commitInfo struct {
 	entryName string
 	infos     []interface{}
@@ -16,6 +15,8 @@ type commitInfo struct {
 // GetCommitsInfo takes advantages of concurrey to speed up getting information
 // of all commits that are corresponding to these entries.
 // TODO: limit max goroutines at same time
+// NOTE: basically this is a nonsense stuff because public method returns all-private data structure
+// we should trace it back to gogs and investigate the path of those return values
 func (tes Entries) GetCommitsInfo(commit *Commit, treePath string) ([][]interface{}, error) {
 	if len(tes) == 0 {
 		return nil, nil
